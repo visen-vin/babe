@@ -32,7 +32,7 @@ export const fileReaderTool = tool(
         }
     },
     {
-        name: "read_workspace_file",
+        name: "readFile",
         description: "Use this to read a file from the user's workspace records like SOUL.md or MEMORY.md",
         schema: z.object({
             fileName: z.string().describe("The name of the file to read (e.g., 'SOUL.md')"),

@@ -14,26 +14,31 @@ const app = new Hono();
  * Core Agent Logic for both Telegram and API
  */
 async function executeAgentFlow(userInput: string) {
-    const modelWithTools = model.bindTools(tools);
-    const messages: BaseMessage[] = [
-        new SystemMessage("You are Vaspbot, an AI Architect. Respond with the final answer only."),
-        new HumanMessage(userInput),
-    ];
+    try {
+        const modelWithTools = model.bindTools(tools);
+        const messages: BaseMessage[] = [
+            new SystemMessage("You are Vaspbot, an AI Architect. Use tools for searches or file reading as needed. Always give a human-friendly final answer."),
+            new HumanMessage(userInput),
+        ];
 
-    const result = (await modelWithTools.invoke(messages)) as AIMessage;
+        const result = (await modelWithTools.invoke(messages)) as AIMessage;
 
-    if (result.tool_calls && result.tool_calls.length > 0) {
-        const toolCall = result.tool_calls[0]!;
-        const selectedTool = tools.find(t => t.name === toolCall.name) as any;
-        if (selectedTool) {
-            messages.push(result);
-            const toolMessage = await selectedTool.invoke(toolCall);
-            messages.push(toolMessage);
-            const finalResponse = await modelWithTools.invoke(messages);
-            return finalResponse.content as string;
+        if (result.tool_calls && result.tool_calls.length > 0) {
+            const toolCall = result.tool_calls[0]!;
+            const selectedTool = tools.find(t => t.name === toolCall.name) as any;
+            if (selectedTool) {
+                messages.push(result);
+                const toolMessage = await selectedTool.invoke(toolCall);
+                messages.push(toolMessage);
+                const finalResponse = await modelWithTools.invoke(messages);
+                return finalResponse.content as string;
+            }
         }
+        return result.content as string;
+    } catch (err: any) {
+        console.error("Brain Error:", err.message);
+        return "⚠️ I had a temporary glitch in my architect brain. Could you repeat that or ask something else?";
     }
-    return result.content as string;
 }
 
 // --- 🌐 API Definitions ---
@@ -71,14 +76,19 @@ async function start() {
 
     // Telegram Handler
     bot.on(message("text"), async (ctx) => {
-        const userInput = ctx.message.text;
-        console.log(`\n[Telegram] User: ${userInput}`);
+        try {
+            const userInput = ctx.message.text;
+            console.log(`\n[Telegram] User: ${userInput}`);
 
-        // Simple typing notification
-        await ctx.sendChatAction("typing");
+            // Simple typing notification
+            await ctx.sendChatAction("typing");
 
-        const response = await executeAgentFlow(userInput);
-        await ctx.reply(response);
+            const response = await executeAgentFlow(userInput);
+            await ctx.reply(response);
+        } catch (err: any) {
+            console.error("Telegram Handler Error:", err.message);
+            await ctx.reply("😔 I'm having trouble responding right now. Please try again later.");
+        }
     });
 
     // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
