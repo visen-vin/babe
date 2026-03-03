@@ -13,6 +13,7 @@ services:
       # Isse aapki memory files AWS server par permanent rahengi
       - ../SOUL.md:/SOUL.md
       - ../MEMORY.md:/MEMORY.md
+      - ../memory_legacy:/memory_legacy
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}

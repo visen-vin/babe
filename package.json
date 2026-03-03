@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun run src/index.ts",
+    "chat": "bun run src/chat.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
