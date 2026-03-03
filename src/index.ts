@@ -49,9 +49,16 @@ app.get("/", async (c) => {
     try {
         const filePath = "./public/index.html";
         const file = (globalThis as any).Bun.file(filePath);
-        return c.html(await file.text());
-    } catch (e) {
-        return c.text("Vaspbot API is online! UI not found.");
+        const exists = await file.exists();
+        console.log(`[API] Serving UI from ${filePath} (Exists: ${exists})`);
+
+        if (!exists) return c.text("UI file not found in public/index.html");
+
+        const content = await file.text();
+        return c.html(content);
+    } catch (e: any) {
+        console.error(`[API] UI Error: ${e.message}`);
+        return c.text("Vaspbot API is online! UI error.");
     }
 });
 
@@ -74,9 +81,15 @@ async function start() {
         await ctx.reply(response);
     });
 
-    // Start Telegram
-    bot.launch();
-    console.log("🚀 Telegram Bot is LIVE!");
+    // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
+    try {
+        bot.launch().catch(err => {
+            console.error("⚠️ Telegram Bot error (Token conflict?):", err.message);
+        });
+        console.log("🚀 Telegram Bot attempt started!");
+    } catch (e: any) {
+        console.error("❌ Failed to launch Telegram bot:", e.message);
+    }
 
     // Start Web Server using Bun.serve
     console.log("🌐 Web API is LIVE on port 3001!");
