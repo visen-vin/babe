@@ -17,13 +17,18 @@ async function executeAgentFlow(userInput: string) {
     try {
         const modelWithTools = model.bindTools(tools);
         const messages: BaseMessage[] = [
-            new SystemMessage("You are Vaspbot, an AI Architect. Use tools for searches or file reading as needed. Always give a human-friendly final answer."),
+            new SystemMessage(`You are Vaspbot, a professional AI Architect. 
+            TOOLS: You have access to tools for web search, file reading, and math.
+            INSTRUCTIONS:
+            - If the user asks for current events or something you don't know, use 'searchWeb'.
+            - If the user asks about their workspace or files, use 'readFile'.
+            - Always provide a factual, helpful, and concise response.
+            - When using a tool, respond ONLY with the tool call. Do not add preamble.`),
             new HumanMessage(userInput),
         ];
 
-        console.log(`[Brain] Thinking about: ${userInput.substring(0, 30)}...`);
+        console.log(`[Brain] Query: ${userInput}`);
         const result = (await modelWithTools.invoke(messages)) as AIMessage;
-        console.log(`[Brain] Model responded.`);
 
         if (result.tool_calls && result.tool_calls.length > 0) {
             const toolCall = result.tool_calls[0]!;
