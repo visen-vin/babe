@@ -31,7 +31,7 @@ COPY . .
 RUN bun playwright install chromium
 
 # 8. Expose API Port
-EXPOSE 3000
+EXPOSE 3001
 
 # 9. Start the bot
 CMD ["bun", "src/index.ts"]

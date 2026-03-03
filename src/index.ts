@@ -71,12 +71,12 @@ async function start() {
     console.log("🚀 Telegram Bot is LIVE!");
 
     // Start Web Server using Bun.serve
-    console.log("🌐 Web API is LIVE on port 3000!");
+    console.log("🌐 Web API is LIVE on port 3001!");
 
     // Explicitly using Bun global
     (globalThis as any).Bun.serve({
         fetch: app.fetch,
-        port: 3000,
+        port: 3001,
     });
 
     // Graceful stop

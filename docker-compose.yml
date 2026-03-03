@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       # Isse aapki memory files AWS server par permanent rahengi
       - ../SOUL.md:/SOUL.md
