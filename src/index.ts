@@ -1,7 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { model } from "./core/llm";
 import { chatHistory } from "./memory/history";
-import { tools, webSearchTool, fileReaderTool } from "./tools/index";
+import { tools, webSearchTool, fileReaderTool, fileWriterTool } from "./tools/index";
 import { AIMessage, HumanMessage, ToolMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 
 import { Telegraf } from "telegraf";
@@ -17,12 +17,25 @@ async function executeAgentFlow(userInput: string) {
     try {
         console.log(`[Brain] Query: ${userInput}`);
 
+        // 🧠 Load Soul and Memory files
+        const soul = await (fileReaderTool as any).invoke({ fileName: "SOUL.md" });
+        const memory = await (fileReaderTool as any).invoke({ fileName: "MEMORY.md" });
+
         const systemPrompt = `You are Vaspbot, a professional AI Architect.
+        
+        --- YOUR SOUL ---
+        ${soul}
+        --- YOUR MEMORY & MISSIONS ---
+        ${memory}
+        -----------------
+
         MANDATORY FORMAT: 
         - If you need to search: SEARCH: [query]
         - If you need to read: READ: [filename]
         - If you have the answer: ANSWER: [final response]
-        Only use tools if necessary.`;
+        
+        Combine your soul, your memory, and tools to help the user. 
+        Only use tools if necessary. If you change your SOUL or MEMORY, tell the user.`;
 
         const messages: BaseMessage[] = [
             new SystemMessage(systemPrompt),
@@ -49,6 +62,16 @@ async function executeAgentFlow(userInput: string) {
                 const fileContent = await (fileReaderTool as any).invoke({ fileName: filename });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`File Content: ${fileContent}`));
+            } else if (content.includes("WRITE:")) {
+                const parts = content.split("WRITE:")[1]?.trim();
+                const filename = parts?.split("\n")[0]?.trim();
+                const fileBody = parts?.substring(parts.indexOf("\n") + 1)?.trim();
+                if (filename && fileBody) {
+                    console.log(`[Manual Tool] Writing to file: ${filename}`);
+                    const writeResult = await (fileWriterTool as any).invoke({ fileName: filename, content: fileBody });
+                    messages.push(new AIMessage(content));
+                    messages.push(new HumanMessage(`Write Result: ${writeResult}`));
+                }
             } else if (content.includes("ANSWER:")) {
                 return content.replace("ANSWER:", "").trim();
             } else {

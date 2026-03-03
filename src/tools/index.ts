@@ -48,6 +48,26 @@ export const calculatorTool = new Calculator();
 
 // "Why": Bot ko batao ki wo files padh sakta hai.
 // "What": Ek tool jo filename leta hai aur uska content return karta hai.
+export const fileWriterTool = tool(
+    async ({ fileName, content }) => {
+        try {
+            const filePath = path.join(process.cwd(), "..", fileName);
+            await fs.writeFile(filePath, content, "utf-8");
+            return `File ${fileName} updated successfully.`;
+        } catch (error: any) {
+            return `Error writing file: ${error.message}`;
+        }
+    },
+    {
+        name: "writeFile",
+        description: "Use this to update or create a file in the workspace like SOUL.md or MEMORY.md",
+        schema: z.object({
+            fileName: z.string().describe("The name of the file to write"),
+            content: z.string().describe("The full content of the file"),
+        }),
+    }
+);
+
 export const fileReaderTool = tool(
     async ({ fileName }) => {
         try {
@@ -68,4 +88,4 @@ export const fileReaderTool = tool(
     }
 );
 
-export const tools = [fileReaderTool, webSearchTool, calculatorTool, browserTool];
+export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool];
