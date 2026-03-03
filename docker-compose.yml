@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  vaspbot:
+    build: .
+    container_name: vaspbot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      # Isse aapki memory files AWS server par permanent rahengi
+      - ../SOUL.md:/SOUL.md
+      - ../MEMORY.md:/MEMORY.md
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
