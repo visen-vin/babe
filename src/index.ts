@@ -20,6 +20,7 @@ async function executeAgentFlow(userInput: string) {
         // 🧠 Load Soul and Memory files
         const soul = await (fileReaderTool as any).invoke({ fileName: "SOUL.md" });
         const memory = await (fileReaderTool as any).invoke({ fileName: "MEMORY.md" });
+        console.log(`[Memory] Loaded Soul (${soul.length} bytes) and Memory (${memory.length} bytes)`);
 
         const systemPrompt = `You are Vaspbot, a professional AI Architect.
         
