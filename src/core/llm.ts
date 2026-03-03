@@ -1,7 +1,10 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 
-// "Why": Switching to Gemini as it's more stable for tool calling.
-export const model = new ChatGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_API_KEY as string,
-    model: "gemini-1.5-flash",
+// "Why": ChatOpenAI bridge is often more stable for tool calls on Groq.
+export const model = new ChatOpenAI({
+    apiKey: process.env.GROQ_API_KEY as string,
+    configuration: {
+        baseURL: "https://api.groq.com/openai/v1",
+    },
+    modelName: "llama-3.3-70b-versatile",
 });
