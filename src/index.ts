@@ -17,43 +17,48 @@ async function executeAgentFlow(userInput: string) {
     try {
         console.log(`[Brain] Query: ${userInput}`);
 
-        // Manual ReAct Prompt
         const systemPrompt = `You are Vaspbot, a professional AI Architect.
-        If you need to search the web, output exactly: SEARCH: [query]
-        If you need to read a file, output exactly: READ: [filename]
-        If you have the final answer, output: ANSWER: [your answer]`;
+        MANDATORY FORMAT: 
+        - If you need to search: SEARCH: [query]
+        - If you need to read: READ: [filename]
+        - If you have the answer: ANSWER: [final response]
+        Only use tools if necessary.`;
 
         const messages: BaseMessage[] = [
             new SystemMessage(systemPrompt),
             new HumanMessage(userInput),
         ];
 
-        let result = (await model.invoke(messages)) as AIMessage;
-        let content = result.content as string;
+        let steps = 0;
+        let finalContent = "";
 
-        if (content.includes("SEARCH:")) {
-            const query = content.split("SEARCH:")[1]?.trim();
-            if (query) {
+        while (steps < 3) {
+            const result = (await model.invoke(messages)) as AIMessage;
+            const content = result.content as string;
+            finalContent = content;
+
+            if (content.includes("SEARCH:")) {
+                const query = content.split("SEARCH:")[1]?.trim();
                 console.log(`[Manual Tool] Searching for: ${query}`);
                 const searchResult = await (webSearchTool as any).invoke({ query });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`Search Results: ${searchResult}`));
-                result = (await model.invoke(messages)) as AIMessage;
-                content = result.content as string;
-            }
-        } else if (content.includes("READ:")) {
-            const filename = content.split("READ:")[1]?.trim();
-            if (filename) {
+            } else if (content.includes("READ:")) {
+                const filename = content.split("READ:")[1]?.trim();
                 console.log(`[Manual Tool] Reading file: ${filename}`);
                 const fileContent = await (fileReaderTool as any).invoke({ fileName: filename });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`File Content: ${fileContent}`));
-                result = (await model.invoke(messages)) as AIMessage;
-                content = result.content as string;
+            } else if (content.includes("ANSWER:")) {
+                return content.replace("ANSWER:", "").trim();
+            } else {
+                // If it doesn't follow the format but gives an answer
+                return content.trim();
             }
+            steps++;
         }
 
-        return content.replace("ANSWER:", "").trim();
+        return finalContent.replace("SEARCH:", "Search:").replace("ANSWER:", "").trim();
     } catch (err: any) {
         console.error("Brain Error:", err.message);
         return "⚠️ Architect Brain Glitch: " + err.message;
