@@ -1,7 +1,7 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { model } from "./core/llm";
 import { chatHistory } from "./memory/history";
-import { tools } from "./tools";
+import { tools, webSearchTool, fileReaderTool } from "./tools/index";
 import { AIMessage, HumanMessage, ToolMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 
 import { Telegraf } from "telegraf";
@@ -15,30 +15,48 @@ const app = new Hono();
  */
 async function executeAgentFlow(userInput: string) {
     try {
-        const modelWithTools = model.bindTools(tools);
+        console.log(`[Brain] Query: ${userInput}`);
+
+        // Manual ReAct Prompt
+        const systemPrompt = `You are Vaspbot, a professional AI Architect.
+        If you need to search the web, output exactly: SEARCH: [query]
+        If you need to read a file, output exactly: READ: [filename]
+        If you have the final answer, output: ANSWER: [your answer]`;
+
         const messages: BaseMessage[] = [
-            new SystemMessage("You are Vaspbot, a helpful AI assistant. You have tools for web search and file reading. Use them only if necessary."),
+            new SystemMessage(systemPrompt),
             new HumanMessage(userInput),
         ];
 
-        console.log(`[Brain] Query: ${userInput}`);
-        const result = (await modelWithTools.invoke(messages)) as AIMessage;
+        let result = (await model.invoke(messages)) as AIMessage;
+        let content = result.content as string;
 
-        if (result.tool_calls && result.tool_calls.length > 0) {
-            const toolCall = result.tool_calls[0]!;
-            const selectedTool = tools.find(t => t.name === toolCall.name) as any;
-            if (selectedTool) {
-                messages.push(result);
-                const toolMessage = await selectedTool.invoke(toolCall);
-                messages.push(toolMessage);
-                const finalResponse = await modelWithTools.invoke(messages);
-                return finalResponse.content as string;
+        if (content.includes("SEARCH:")) {
+            const query = content.split("SEARCH:")[1]?.trim();
+            if (query) {
+                console.log(`[Manual Tool] Searching for: ${query}`);
+                const searchResult = await (webSearchTool as any).invoke({ query });
+                messages.push(new AIMessage(content));
+                messages.push(new HumanMessage(`Search Results: ${searchResult}`));
+                result = (await model.invoke(messages)) as AIMessage;
+                content = result.content as string;
+            }
+        } else if (content.includes("READ:")) {
+            const filename = content.split("READ:")[1]?.trim();
+            if (filename) {
+                console.log(`[Manual Tool] Reading file: ${filename}`);
+                const fileContent = await (fileReaderTool as any).invoke({ fileName: filename });
+                messages.push(new AIMessage(content));
+                messages.push(new HumanMessage(`File Content: ${fileContent}`));
+                result = (await model.invoke(messages)) as AIMessage;
+                content = result.content as string;
             }
         }
-        return result.content as string;
+
+        return content.replace("ANSWER:", "").trim();
     } catch (err: any) {
         console.error("Brain Error:", err.message);
-        return "⚠️ I had a temporary glitch in my architect brain. Could you repeat that or ask something else?";
+        return "⚠️ Architect Brain Glitch: " + err.message;
     }
 }
 
