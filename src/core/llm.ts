@@ -1,7 +1,7 @@
-import { ChatGroq } from "@langchain/groq";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-// "Why": Model config ko ek jagah rakhne se kal ko model switch karna asaan hota hai.
-export const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY as string,
-    model: "mixtral-8x7b-32768",
+// "Why": Switching to Gemini as it's more stable for tool calling.
+export const model = new ChatGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_API_KEY as string,
+    model: "gemini-1.5-flash",
 });
