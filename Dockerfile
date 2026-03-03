@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 
 # 5. Copy package files and install
 COPY package.json bun.lock ./
-RUN bun install --production
+RUN bun install
 
 # 6. Copy the rest of the code
 COPY . .
