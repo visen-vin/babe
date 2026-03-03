@@ -21,7 +21,9 @@ async function executeAgentFlow(userInput: string) {
             new HumanMessage(userInput),
         ];
 
+        console.log(`[Brain] Thinking about: ${userInput.substring(0, 30)}...`);
         const result = (await modelWithTools.invoke(messages)) as AIMessage;
+        console.log(`[Brain] Model responded.`);
 
         if (result.tool_calls && result.tool_calls.length > 0) {
             const toolCall = result.tool_calls[0]!;
@@ -84,6 +86,7 @@ async function start() {
             await ctx.sendChatAction("typing");
 
             const response = await executeAgentFlow(userInput);
+            console.log(`[Telegram] Bot response sent: ${response.substring(0, 50)}...`);
             await ctx.reply(response);
         } catch (err: any) {
             console.error("Telegram Handler Error:", err.message);
