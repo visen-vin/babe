@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 5. Copy package files and install
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --production
 
 # 6. Copy the rest of the code
