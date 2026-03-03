@@ -17,13 +17,7 @@ async function executeAgentFlow(userInput: string) {
     try {
         const modelWithTools = model.bindTools(tools);
         const messages: BaseMessage[] = [
-            new SystemMessage(`You are Vaspbot, a professional AI Architect. 
-            TOOLS: You have access to tools for web search, file reading, and math.
-            INSTRUCTIONS:
-            - If the user asks for current events or something you don't know, use 'searchWeb'.
-            - If the user asks about their workspace or files, use 'readFile'.
-            - Always provide a factual, helpful, and concise response.
-            - When using a tool, respond ONLY with the tool call. Do not add preamble.`),
+            new SystemMessage("You are Vaspbot, an AI Architect. You can search the web using 'searchWeb' and read files using 'readFile'. If you don't know something, use a tool. If you do, just answer directly."),
             new HumanMessage(userInput),
         ];
 
