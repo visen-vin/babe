@@ -11,10 +11,38 @@ import { browserTool } from "./browser";
 // "Why": Ready-made tools humein hours of coding se bachate hain.
 // "What": Community tools for Search, Math, and knowledge.
 
-export const webSearchTool = new TavilySearch({
-    tavilyApiKey: process.env.TAVILY_API_KEY as string,
-    maxResults: 3,
-});
+// "Why": Ready-made tools sometimes use complex syntax that Llama on Groq fails to parse.
+// "What": A simple custom tool that calls Tavily for search.
+export const webSearchTool = tool(
+    async ({ query }) => {
+        try {
+            const response = await fetch("https://api.tavily.com/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    api_key: process.env.TAVILY_API_KEY,
+                    query: query,
+                    max_results: 3,
+                }),
+            });
+            const data = await response.json();
+            return JSON.stringify(data.results.map((r: any) => ({
+                title: r.title,
+                url: r.url,
+                content: r.content
+            })));
+        } catch (error: any) {
+            return `Search error: ${error.message}`;
+        }
+    },
+    {
+        name: "searchWeb",
+        description: "Search the web for current events, news, and facts.",
+        schema: z.object({
+            query: z.string().describe("The search query"),
+        }),
+    }
+);
 
 export const calculatorTool = new Calculator();
 
