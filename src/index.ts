@@ -6,18 +6,17 @@ import { AIMessage, HumanMessage, ToolMessage, SystemMessage, BaseMessage } from
 
 import { Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
+import { Hono } from "hono";
 
-// "Why": Telegram bot token ko secure rakhne ke liye .env se uthate hain.
-const botToken = process.env.TELEGRAM_BOT_TOKEN as string;
-const bot = new Telegraf(botToken);
+const app = new Hono();
 
-// "What": User input aane par runAgent ko call karna aur result send karna.
-async function runAgent(userInput: string, ctx: any) {
-    console.log(`\n[Telegram] User: ${userInput}`);
+/**
+ * Core Agent Logic for both Telegram and API
+ */
+async function executeAgentFlow(userInput: string) {
     const modelWithTools = model.bindTools(tools);
-
     const messages: BaseMessage[] = [
-        new SystemMessage("You are Vaspbot, an AI Architect. Use tools if needed. Keep replies concise for Telegram."),
+        new SystemMessage("You are Vaspbot, an AI Architect. Respond with the final answer only."),
         new HumanMessage(userInput),
     ];
 
@@ -25,34 +24,60 @@ async function runAgent(userInput: string, ctx: any) {
 
     if (result.tool_calls && result.tool_calls.length > 0) {
         const toolCall = result.tool_calls[0]!;
-        ctx.reply(`🤖 Using tool: ${toolCall.name}...`);
-
         const selectedTool = tools.find(t => t.name === toolCall.name);
         if (selectedTool) {
-            messages.push(result); // Add the AI's tool call message
+            messages.push(result);
             const toolMessage = await selectedTool.invoke(toolCall);
-            messages.push(toolMessage); // Add the tool's output message
-
+            messages.push(toolMessage);
             const finalResponse = await modelWithTools.invoke(messages);
-            ctx.reply(finalResponse.content as string);
-            await chatHistory.addAIMessage(finalResponse.content as string);
+            return finalResponse.content as string;
         }
-    } else {
-        ctx.reply(result.content as string);
-        await chatHistory.addAIMessage(result.content as string);
     }
+    return result.content as string;
 }
 
-async function start() {
-    console.log("--- ⚡ Vaspbot (Telegram Mode) Starting... ---");
+// --- 🌐 API Definitions ---
+app.post("/chat", async (c) => {
+    const body = await c.req.json();
+    const userInput = body.message;
+    console.log(`\n[API] Request: ${userInput}`);
+    const response = await executeAgentFlow(userInput);
+    return c.json({ response });
+});
 
+app.get("/", (c) => c.text("Vaspbot API is online! 🚀"));
+
+// --- 🤖 Telegram Bot ---
+const botToken = process.env.TELEGRAM_BOT_TOKEN as string;
+const bot = new Telegraf(botToken);
+
+async function start() {
+    console.log("--- ⚡ Vaspbot Starting... ---");
+
+    // Telegram Handler
     bot.on(message("text"), async (ctx) => {
-        const text = ctx.message.text;
-        await runAgent(text, ctx);
+        const userInput = ctx.message.text;
+        console.log(`\n[Telegram] User: ${userInput}`);
+
+        // Simple typing notification
+        await ctx.sendChatAction("typing");
+
+        const response = await executeAgentFlow(userInput);
+        await ctx.reply(response);
     });
 
+    // Start Telegram
     bot.launch();
-    console.log("🚀 Vaspbot is now LIVE on Telegram!");
+    console.log("🚀 Telegram Bot is LIVE!");
+
+    // Start Web Server using Bun.serve
+    console.log("🌐 Web API is LIVE on port 3000!");
+
+    // Explicitly using Bun global
+    (globalThis as any).Bun.serve({
+        fetch: app.fetch,
+        port: 3000,
+    });
 
     // Graceful stop
     process.once("SIGINT", () => bot.stop("SIGINT"));
