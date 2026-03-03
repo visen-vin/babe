@@ -45,7 +45,15 @@ app.post("/chat", async (c) => {
     return c.json({ response });
 });
 
-app.get("/", (c) => c.text("Vaspbot API is online! 🚀"));
+app.get("/", async (c) => {
+    try {
+        const filePath = "./public/index.html";
+        const file = (globalThis as any).Bun.file(filePath);
+        return c.html(await file.text());
+    } catch (e) {
+        return c.text("Vaspbot API is online! UI not found.");
+    }
+});
 
 // --- 🤖 Telegram Bot ---
 const botToken = process.env.TELEGRAM_BOT_TOKEN as string;
