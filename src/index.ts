@@ -17,7 +17,7 @@ async function executeAgentFlow(userInput: string) {
     try {
         const modelWithTools = model.bindTools(tools);
         const messages: BaseMessage[] = [
-            new SystemMessage("You are Vaspbot, an AI Architect. You can search the web using 'searchWeb' and read files using 'readFile'. If you don't know something, use a tool. If you do, just answer directly."),
+            new SystemMessage("You are Vaspbot, a helpful AI assistant. You have tools for web search and file reading. Use them only if necessary."),
             new HumanMessage(userInput),
         ];
 
