@@ -24,7 +24,7 @@ async function executeAgentFlow(userInput: string) {
 
     if (result.tool_calls && result.tool_calls.length > 0) {
         const toolCall = result.tool_calls[0]!;
-        const selectedTool = tools.find(t => t.name === toolCall.name);
+        const selectedTool = tools.find(t => t.name === toolCall.name) as any;
         if (selectedTool) {
             messages.push(result);
             const toolMessage = await selectedTool.invoke(toolCall);

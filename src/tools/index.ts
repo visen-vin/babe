@@ -2,7 +2,7 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+import { TavilySearch } from "@langchain/tavily";
 import { Calculator } from "@langchain/community/tools/calculator";
 import { browserTool } from "./browser";
 // import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia"; // Usually needs a backend
@@ -11,8 +11,8 @@ import { browserTool } from "./browser";
 // "Why": Ready-made tools humein hours of coding se bachate hain.
 // "What": Community tools for Search, Math, and knowledge.
 
-export const webSearchTool = new TavilySearchResults({
-    apiKey: process.env.TAVILY_API_KEY,
+export const webSearchTool = new TavilySearch({
+    tavilyApiKey: process.env.TAVILY_API_KEY as string,
     maxResults: 3,
 });
 
