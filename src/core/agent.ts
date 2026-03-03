@@ -1,5 +1,5 @@
 import { model } from "../core/llm";
-import { webSearchTool, fileReaderTool, fileWriterTool } from "../tools/index";
+import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 
 /**
@@ -25,13 +25,14 @@ export async function executeAgentFlow(userInput: string) {
         CRITICAL INSTRUCTIONS:
         1. **Identity & Legacy:** Your human is Vinayak Singh. You must ALWAYS treat him with respect. Use "Ji" and a polite, helpful Hindi/English mix. 
         2. **Legacy Memory Access:** You have a vast knowledge base in the 'memory_legacy/' directory. 
-           - **IF YOU DON'T KNOW SOMETHING ABOUT THE USER (Name, Financials, Goals, Preferences), READ: memory_legacy/USER.md or memory_legacy/memory/2026-02-27-user-profile.md IMMEDIATELY.**
-           - Do not say "I don't know your name" without checking these files first.
+           - **IF YOU DON'T KNOW SOMETHING ABOUT THE USER (Name, Financials, Goals, Preferences), SEARCH_MEMORY for keywords OR READ specific files like memory_legacy/USER.md or memory_legacy/memory/2026-02-27-user-profile.md IMMEDIATELY.**
+           - Do not say "I don't know your name" without searching/checking these files first.
         3. **Tone:** Be calm, analytical, and supportive. No corporate filler.
 
         MANDATORY FORMAT: 
-        - If you need to search: SEARCH: [query]
-        - If you need to read: READ: [path] (Example: READ: memory_legacy/USER.md)
+        - If you need to search the web: SEARCH: [query]
+        - If you need to search local/legacy memory: SEARCH_MEMORY: [query]
+        - If you need to read a specific file: READ: [path]
         - If you have the answer: ANSWER: [final response]`;
 
         const messages: BaseMessage[] = [
@@ -42,17 +43,23 @@ export async function executeAgentFlow(userInput: string) {
         let steps = 0;
         let finalContent = "";
 
-        while (steps < 3) {
+        while (steps < 4) {
             const result = (await model.invoke(messages)) as AIMessage;
             const content = result.content as string;
             finalContent = content;
 
             if (content.includes("SEARCH:")) {
                 const query = content.split("SEARCH:")[1]?.trim();
-                console.log(`[Manual Tool] Searching for: ${query}`);
+                console.log(`[Manual Tool] Searching web for: ${query}`);
                 const searchResult = await (webSearchTool as any).invoke({ query });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`Search Results: ${searchResult}`));
+            } else if (content.includes("SEARCH_MEMORY:")) {
+                const query = content.split("SEARCH_MEMORY:")[1]?.trim();
+                console.log(`[Manual Tool] Searching memory for: ${query}`);
+                const searchResult = await (memorySearchTool as any).invoke({ query });
+                messages.push(new AIMessage(content));
+                messages.push(new HumanMessage(`Memory Search Results: ${searchResult}`));
             } else if (content.includes("READ:")) {
                 const filename = content.split("READ:")[1]?.trim();
                 console.log(`[Manual Tool] Reading file: ${filename}`);

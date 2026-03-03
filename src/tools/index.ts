@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { TavilySearch } from "@langchain/tavily";
 import { Calculator } from "@langchain/community/tools/calculator";
 import { browserTool } from "./browser";
+import { memoryDB } from "../core/memory-db";
 // import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia"; // Usually needs a backend
 // import { YouTubeSearchTool } from "@langchain/community/tools/youtube_search";
 
@@ -88,4 +89,25 @@ export const fileReaderTool = tool(
     }
 );
 
-export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool];
+export const memorySearchTool = tool(
+    async ({ query }) => {
+        try {
+            // Always re-index to keep it fresh for now (can be optimized later)
+            await memoryDB.indexFiles(path.join(process.cwd(), ".."));
+            const results = memoryDB.search(query);
+            if (results.length === 0) return "No matches found in local memory.";
+            return JSON.stringify(results);
+        } catch (error: any) {
+            return `Memory Search error: ${error.message}`;
+        }
+    },
+    {
+        name: "searchMemory",
+        description: "Search internal memory, records, and legacy archives for facts, dates, and previous project info.",
+        schema: z.object({
+            query: z.string().describe("Keyword or phrase to search for in local files"),
+        }),
+    }
+);
+
+export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool, memorySearchTool];
