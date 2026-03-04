@@ -1,5 +1,5 @@
 import { model } from "../core/llm";
-import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool } from "../tools/index";
+import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
 
@@ -39,6 +39,7 @@ export async function executeAgentFlow(userInput: string) {
         - Read File: READ: [path]
         - Write File: WRITE: [filename]\n[content]
         - Math: CALC: [expression]
+        - Git Update: GIT_PUSH: [commit message]
         - Final Response: ANSWER: [casual conversational response]`;
 
         const messages: BaseMessage[] = [
@@ -95,6 +96,12 @@ export async function executeAgentFlow(userInput: string) {
                 const calcResult = await (calculatorTool as any).invoke(expression);
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`Calculation Result: ${calcResult}`));
+            } else if (content.includes("GIT_PUSH:")) {
+                const message = content.split("GIT_PUSH:")[1]?.trim().split("\n")[0];
+                console.log(`[Tool] pushing to Git: ${message}`);
+                const gitResult = await (gitPushTool as any).invoke({ message });
+                messages.push(new AIMessage(content));
+                messages.push(new HumanMessage(`Git Result: ${gitResult}`));
             } else if (content.includes("ANSWER:")) {
                 const finalStr = content.replace("ANSWER:", "").trim();
                 await addMessage("user", userInput);

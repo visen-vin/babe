@@ -9,6 +9,7 @@ import { message } from "telegraf/filters";
 import { Hono } from "hono";
 
 import { executeAgentFlow } from "./core/agent";
+import { startAutonomousResearch } from "./autonomous";
 
 const app = new Hono();
 
@@ -44,6 +45,9 @@ const bot = new Telegraf(botToken);
 
 async function start() {
     console.log("--- ⚡ Vaspbot Starting... ---");
+
+    // Start background research loop
+    startAutonomousResearch();
 
     // Telegram Handler
     bot.on(message("text"), async (ctx) => {

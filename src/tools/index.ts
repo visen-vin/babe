@@ -110,5 +110,29 @@ export const memorySearchTool = tool(
     }
 );
 
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+
+const execAsync = promisify(exec);
+
+export const gitPushTool = tool(
+    async ({ message }) => {
+        try {
+            // We assume we are in the 'bot' folder or the root is reachable
+            const { stdout, stderr } = await execAsync(`git add .. && git commit -m "${message}" && git push origin master`);
+            return `Git Update Successful:\n${stdout}\n${stderr}`;
+        } catch (error: any) {
+            return `Git Error: ${error.message}`;
+        }
+    },
+    {
+        name: "gitPush",
+        description: "Commit and push changes to the GitHub repository. Use this to sync README.md or other project files.",
+        schema: z.object({
+            message: z.string().describe("The commit message"),
+        }),
+    }
+);
+
 export { browserTool };
-export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool, memorySearchTool];
+export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool, memorySearchTool, gitPushTool];
