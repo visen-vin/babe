@@ -3,7 +3,7 @@ import { chatHistory } from "./memory/history";
 import { tools, webSearchTool, fileReaderTool, fileWriterTool } from "./tools/index";
 import { AIMessage, HumanMessage, ToolMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 
-import { Telegraf } from "telegraf";
+import { Telegraf, Markup } from "telegraf";
 import { message } from "telegraf/filters";
 import { Hono } from "hono";
 
@@ -86,6 +86,44 @@ async function start() {
             await ctx.reply("😔 I'm having trouble responding right now. Please try again later.");
         }
     });
+
+    // --- 🛠️ Model Switcher Feature ---
+
+    // Command to show model options
+    bot.command("model", async (ctx) => {
+        const currentModel = getActiveModel();
+        const modelName = currentModel.modelName || currentModel.model || "Unknown";
+
+        await ctx.reply(
+            `🤖 *Vaspbot Brain Settings*\n\nCurrent Model: \`${modelName}\` \n\nChoose a new brain tier:`,
+            {
+                parse_mode: "Markdown",
+                ...Markup.inlineKeyboard([
+                    [Markup.button.callback("💎 Elite (Claude 3.5)", "switch_elite")],
+                    [Markup.button.callback("🚀 Fast (Groq 70B)", "switch_groq")],
+                    [Markup.button.callback("⚡ Ultra-Fast (Groq 8B)", "switch_groqlite")],
+                    [Markup.button.callback("🔥 Resilient (Gemini Flash)", "switch_gemini")],
+                    [Markup.button.callback("🆓 Free Tier (Llama 3)", "switch_free")],
+                ])
+            }
+        );
+    });
+
+    // Action handlers for the buttons
+    const handleSwitch = (ctx: any, tier: any, name: string) => {
+        const { setModel } = require("./core/llm");
+        const res = setModel(tier);
+        console.log(`[System] ${res}`);
+        return ctx.editMessageText(`✅ *Success!* \nVaspbot is now using the *${name}* tier.\n\nAab puchiye jo puchna hai Ji!`, {
+            parse_mode: "Markdown"
+        });
+    };
+
+    bot.action("switch_elite", (ctx) => handleSwitch(ctx, "elite", "Elite 💎"));
+    bot.action("switch_groq", (ctx) => handleSwitch(ctx, "groq", "Fast 🚀"));
+    bot.action("switch_groqlite", (ctx) => handleSwitch(ctx, "groqlite", "Ultra-Fast ⚡"));
+    bot.action("switch_gemini", (ctx) => handleSwitch(ctx, "gemini", "Resilient 🔥"));
+    bot.action("switch_free", (ctx) => handleSwitch(ctx, "free", "Free 🆓"));
 
     // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
     // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
