@@ -73,7 +73,7 @@ export async function executeAgentFlow(userInput: string) {
                 result = (await currentModel.invoke(messages)) as AIMessage;
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
-                if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("insufficient_quota")) {
+                if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("404") || error.message.includes("insufficient_quota")) {
                     console.log(`⚠️ Tier ${tierIndex} limit hit. Falling down to next tier...`);
                     tierIndex++;
                     if (tierIndex >= tiers.length) {
