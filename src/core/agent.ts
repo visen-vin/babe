@@ -55,13 +55,17 @@ export async function executeAgentFlow(userInput: string) {
         while (steps < 4) {
             let result;
             try {
+                console.log(`[Brain] Calling LLM (Step ${steps + 1})...`);
                 result = (await currentModel.invoke(messages)) as AIMessage;
+                console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
                 if (error.message.includes("429") || error.message.includes("rate limit")) {
                     console.log("⚠️ Groq limit hit. Switching to Gemini fallback...");
                     currentModel = fallbackModel;
                     result = (await currentModel.invoke(messages)) as AIMessage;
+                    console.log(`[Brain] Fallback LLM Success.`);
                 } else {
+                    console.error(`[Brain] LLM Failure: ${error.message}`);
                     throw error;
                 }
             }
