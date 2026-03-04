@@ -67,13 +67,14 @@ async function start() {
     });
 
     // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
+    // Start Telegram (Wrapped in try-catch to prevent crash if conflict occurs)
     try {
         bot.launch().catch(err => {
-            console.error("⚠️ Telegram Bot error (Token conflict?):", err.message);
+            console.error("⚠️ Telegram Bot launch error:", err.message);
         });
         console.log("🚀 Telegram Bot attempt started!");
     } catch (e: any) {
-        console.error("❌ Failed to launch Telegram bot:", e.message);
+        console.error("❌ Failed to initiate Telegram bot launch:", e.message);
     }
 
     // Start Web Server using Bun.serve

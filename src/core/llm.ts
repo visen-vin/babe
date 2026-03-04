@@ -21,7 +21,9 @@ export const groqModel = new ChatOpenAI({
 // Tier 3: The "Resilient" Brain (Gemini)
 export const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
-    model: "gemini-1.5-flash-latest",
+    model: "gemini-1.5-flash",
+    // Use v1 instead of v1beta to see if it fixes 404
+    apiVersion: "v1",
 });
 
 // Tier 4: The "Safe/Free" Brain (OpenRouter Free Models)
