@@ -23,19 +23,32 @@ export class MemoryDB {
         `);
     }
 
-    async indexFiles(directory: string, pattern: RegExp = /\.md$/) {
+    async indexFiles(rootDirectory: string) {
         // Clear old index
         this.db.run("DELETE FROM documents");
 
-        const files = await this.recursiveReaddir(directory);
-        for (const file of files) {
-            if (pattern.test(file)) {
-                const content = await fs.readFile(file, "utf-8");
-                const relativePath = path.relative(path.join(process.cwd(), ".."), file);
-                this.db.run("INSERT INTO documents (path, content) VALUES (?, ?)", [relativePath, content]);
+        const dirsToIndex = [
+            path.join(rootDirectory, "memory_legacy"),
+            rootDirectory
+        ];
+
+        for (const dir of dirsToIndex) {
+            try {
+                if (!(await fs.stat(dir)).isDirectory()) continue;
+
+                const files = await this.recursiveReaddir(dir);
+                for (const file of files) {
+                    if (file.endsWith(".md")) {
+                        const content = await fs.readFile(file, "utf-8");
+                        const relativePath = path.relative(rootDirectory, file);
+                        this.db.run("INSERT INTO documents (path, content) VALUES (?, ?)", [relativePath, content]);
+                    }
+                }
+            } catch (e) {
+                // Skip if directory doesn't exist
             }
         }
-        console.log(`[MemoryDB] Indexed ${files.length} files from ${directory}`);
+        console.log(`[MemoryDB] Indexing complete.`);
     }
 
     private async recursiveReaddir(dir: string): Promise<string[]> {
