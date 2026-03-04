@@ -1,5 +1,4 @@
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { model } from "./core/llm";
+import { getActiveModel } from "./core/llm";
 import { chatHistory } from "./memory/history";
 import { tools, webSearchTool, fileReaderTool, fileWriterTool } from "./tools/index";
 import { AIMessage, HumanMessage, ToolMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
