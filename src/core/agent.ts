@@ -155,8 +155,8 @@ export async function executeAgentFlow(userInput: string) {
         await addMessage("ai", finalResponse);
         return finalResponse;
     } catch (err: any) {
-        console.error("Brain Error:", err.message);
-        return "⚠️ Architect Brain Glitch: " + err.message;
+        console.error("Brain Error:", err);
+        return "⚠️ Architect Brain Glitch: " + (err.message || "Unknown error");
     }
 }
 

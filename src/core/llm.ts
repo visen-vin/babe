@@ -21,7 +21,7 @@ export const groqModel = new ChatOpenAI({
 // Tier 3: The "Resilient" Brain (Gemini)
 export const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-latest",
 });
 
 // Tier 4: The "Safe/Free" Brain (OpenRouter Free Models)
@@ -29,6 +29,7 @@ export const freeModel = new ChatOpenAI({
     apiKey: process.env.OPENROUTER_API_KEY as string,
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: { "HTTP-Referer": "https://github.com/visen-vin/babe", "X-Title": "Vaspbot Free" },
     },
     modelName: "meta-llama/llama-3-8b-instruct:free",
 });
