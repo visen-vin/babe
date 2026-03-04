@@ -41,6 +41,7 @@ export class MemoryDB {
     private async recursiveReaddir(dir: string): Promise<string[]> {
         const subdirs = await fs.readdir(dir);
         const files = await Promise.all(subdirs.map(async (subdir) => {
+            if (["node_modules", ".git", ".gemini", "dist", "build", "api-logs"].includes(subdir)) return [];
             const res = path.resolve(dir, subdir);
             return (await fs.stat(res)).isDirectory() ? this.recursiveReaddir(res) : res;
         }));
