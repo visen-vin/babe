@@ -1,4 +1,4 @@
-import { model, fallbackModel } from "../core/llm";
+import { model, fallbackModel, openRouterModel } from "../core/llm";
 import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
@@ -60,8 +60,15 @@ export async function executeAgentFlow(userInput: string) {
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
                 if (error.message.includes("429") || error.message.includes("rate limit")) {
-                    console.log("⚠️ Groq limit hit. Switching to Gemini fallback...");
-                    currentModel = fallbackModel;
+                    if (currentModel === model) {
+                        console.log("⚠️ Groq limit hit. Switching to Gemini fallback...");
+                        currentModel = fallbackModel;
+                    } else if (currentModel === fallbackModel) {
+                        console.log("⚠️ Gemini limit hit. Switching to OpenRouter tertiary backup...");
+                        currentModel = openRouterModel;
+                    } else {
+                        throw error;
+                    }
                     result = (await currentModel.invoke(messages)) as AIMessage;
                     console.log(`[Brain] Fallback LLM Success.`);
                 } else {
