@@ -13,5 +13,5 @@ export const model = new ChatOpenAI({
 // Fallback: Gemini 1.5 Flash (Huge context, higher limits)
 export const fallbackModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-latest",
 });
