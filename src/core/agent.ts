@@ -1,4 +1,4 @@
-import { model, fallbackModel, openRouterModel } from "../core/llm";
+import { model, eliteModel, groqModel, geminiModel, freeModel, setModel } from "../core/llm";
 import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
@@ -9,6 +9,15 @@ import { getHistory, addMessage } from "../memory/history";
 export async function executeAgentFlow(userInput: string) {
     try {
         console.log(`[Brain] Query: ${userInput}`);
+
+        // Handle direct model switch command
+        if (userInput.toLowerCase().startsWith("switch to ")) {
+            const tier = userInput.toLowerCase().replace("switch to ", "").trim();
+            if (["elite", "groq", "gemini", "free"].includes(tier)) {
+                const res = setModel(tier as any);
+                return `Done Ji! ${res}`;
+            }
+        }
 
         // 🧠 Load Soul and Memory files (Only once per query)
         const soul = await (fileReaderTool as any).invoke({ fileName: "SOUL.md" });
@@ -52,6 +61,11 @@ export async function executeAgentFlow(userInput: string) {
         let finalContent = "";
         let currentModel: any = model;
 
+        // Tiered Fallback Logic: elite -> groq -> gemini -> free
+        const tiers = [eliteModel, groqModel, geminiModel, freeModel];
+        let tierIndex = tiers.indexOf(currentModel);
+        if (tierIndex === -1) tierIndex = 1; // Default to groq if unknown
+
         while (steps < 4) {
             let result;
             try {
@@ -59,16 +73,13 @@ export async function executeAgentFlow(userInput: string) {
                 result = (await currentModel.invoke(messages)) as AIMessage;
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
-                if (error.message.includes("429") || error.message.includes("rate limit")) {
-                    if (currentModel === model) {
-                        console.log("⚠️ Groq limit hit. Switching to Gemini fallback...");
-                        currentModel = fallbackModel;
-                    } else if (currentModel === fallbackModel) {
-                        console.log("⚠️ Gemini limit hit. Switching to OpenRouter tertiary backup...");
-                        currentModel = openRouterModel;
-                    } else {
-                        throw error;
+                if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("insufficient_quota")) {
+                    console.log(`⚠️ Tier ${tierIndex} limit hit. Falling down to next tier...`);
+                    tierIndex++;
+                    if (tierIndex >= tiers.length) {
+                        throw new Error("All LLM tiers exhausted. Re-connect or check credits.");
                     }
+                    currentModel = tiers[tierIndex];
                     result = (await currentModel.invoke(messages)) as AIMessage;
                     console.log(`[Brain] Fallback LLM Success.`);
                 } else {
@@ -145,9 +156,6 @@ export async function executeAgentFlow(userInput: string) {
         return finalResponse;
     } catch (err: any) {
         console.error("Brain Error:", err.message);
-        if (err.message.includes("429")) {
-            return "Vinayak Ji, Groq ki limit khatam ho gayi hai. Please 15 minutes wait karein ya model switch karne ko kahein. 🙏";
-        }
         return "⚠️ Architect Brain Glitch: " + err.message;
     }
 }

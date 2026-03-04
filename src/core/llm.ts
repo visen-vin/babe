@@ -1,30 +1,45 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
-// Primary: Groq Llama 3
-export const model = new ChatOpenAI({
-    apiKey: process.env.GROQ_API_KEY as string,
+// Tier 1: The "Elite" Brain (OpenRouter)
+export const eliteModel = new ChatOpenAI({
+    apiKey: process.env.OPENROUTER_API_KEY as string,
     configuration: {
-        baseURL: "https://api.groq.com/openai/v1",
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: { "HTTP-Referer": "https://github.com/visen-vin/babe", "X-Title": "Vaspbot Elite" },
     },
+    modelName: "anthropic/claude-3.5-sonnet",
+});
+
+// Tier 2: The "Fast" Brain (Groq)
+export const groqModel = new ChatOpenAI({
+    apiKey: process.env.GROQ_API_KEY as string,
+    configuration: { baseURL: "https://api.groq.com/openai/v1" },
     modelName: "llama-3.3-70b-versatile",
 });
 
-// Fallback: Gemini Pro (More compatible generally)
-export const fallbackModel = new ChatGoogleGenerativeAI({
+// Tier 3: The "Resilient" Brain (Gemini)
+export const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
     model: "gemini-pro",
 });
 
-// Tertiary: OpenRouter (Unified API for everything)
-export const openRouterModel = new ChatOpenAI({
+// Tier 4: The "Safe/Free" Brain (OpenRouter Free Models)
+export const freeModel = new ChatOpenAI({
     apiKey: process.env.OPENROUTER_API_KEY as string,
     configuration: {
         baseURL: "https://openrouter.ai/api/v1",
-        defaultHeaders: {
-            "HTTP-Referer": "https://github.com/visen-vin/babe",
-            "X-Title": "Vaspbot Architect",
-        },
     },
-    modelName: "openai/gpt-3.5-turbo", // Budget friendly tertiary fallback
+    modelName: "meta-llama/llama-3-8b-instruct:free",
 });
+
+// Default Model Reference (Can be swapped dynamically)
+export let model: any = groqModel;
+
+export function setModel(tier: "elite" | "groq" | "gemini" | "free") {
+    if (tier === "elite") model = eliteModel;
+    else if (tier === "groq") model = groqModel;
+    else if (tier === "gemini") model = geminiModel;
+    else if (tier === "free") model = freeModel;
+    return `Model switched to ${tier} tier.`;
+}
