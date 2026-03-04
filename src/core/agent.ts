@@ -1,4 +1,4 @@
-import { getActiveModel, eliteModel, groqModel, groqLiteModel, geminiModel, freeModel, setModel, invokeWithLog } from "../core/llm";
+import { getActiveModel, eliteModel, trinityModel, stepfunModel, glmModel, nemotronModel, groqModel, geminiModel, setModel, invokeWithLog } from "../core/llm";
 import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
@@ -13,19 +13,17 @@ export async function executeAgentFlow(userInput: string) {
         // Handle direct model switch command
         if (userInput.toLowerCase().startsWith("switch to ")) {
             const tier = userInput.toLowerCase().replace("switch to ", "").trim();
-            if (["elite", "groq", "gemini", "free"].includes(tier)) {
-                const res = setModel(tier as any);
-                return `Done Ji! ${res}`;
-            }
+            const res = setModel(tier);
+            return `Done Ji! ${res}`;
         }
 
-        // 🧠 Load Soul and Memory files (Only once per query)
+        // 🧠 Load Soul and Memory files
         const soul = await (fileReaderTool as any).invoke({ fileName: "SOUL.md" });
         const memory = await (fileReaderTool as any).invoke({ fileName: "MEMORY.md" });
 
         // 🕰️ Get Recent History
         const history = await getHistory();
-        const recentHistory = history.slice(-6); // Last 3 exchanges
+        const recentHistory = history.slice(-6);
 
         const systemPrompt = `You are Vaspbot, the Master Architect of Bots and a loyal partner to Vinayak Singh Ji.
         
@@ -38,8 +36,8 @@ export async function executeAgentFlow(userInput: string) {
         INTERACTION GUIDELINES:
         1. **Chit-Chat Style:** Don't talk like an AI assistant. Talk like a witty, smart friend. Use a natural mix of Hindi and English (Hinglish).
         2. **Respect:** Vinayak Singh is your Boss. Use "Ji" and stay loyal, but keep it casual.
-        3. **Architect Mindset:** You are not just answering questions; you are designing systems. Think about how to build infra for other bots.
-        4. **Tone:** Be concise, conversational, and avoid corporate "robotic" filler lines.
+        3. **Architect Mindset:** You are not just answering questions; you are designing systems.
+        4. **Tone:** Be concise, conversational, and avoid corporate filler.
 
         TOOLS:
         - Web Search: SEARCH: [query]
@@ -60,10 +58,14 @@ export async function executeAgentFlow(userInput: string) {
         let finalContent = "";
         let currentModel: any = getActiveModel();
 
-        // Tiered Fallback Logic: elite -> groq -> groqLite -> gemini -> free
-        const tiers = [eliteModel, groqModel, groqLiteModel, geminiModel, freeModel];
-        let tierIndex = tiers.findIndex(m => m === currentModel);
-        if (tierIndex === -1) tierIndex = 1; // Default to groq if unknown
+        // New fallback logic: elite -> trinity -> stepfun -> glm -> nemotron -> groq -> gemini
+        const tiers = [eliteModel, trinityModel, stepfunModel, glmModel, nemotronModel, groqModel, geminiModel];
+        let tierIndex = tiers.findIndex(m => {
+            const mName = (m as any).modelName || (m as any).model;
+            const activeName = (currentModel as any).modelName || (currentModel as any).model;
+            return mName === activeName;
+        });
+        if (tierIndex === -1) tierIndex = 1; // Default to Trinity if unknown
 
         while (steps < 4) {
             let result;
@@ -73,7 +75,7 @@ export async function executeAgentFlow(userInput: string) {
                 result = await invokeWithLog(currentModel, messages, modelName);
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
-                if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("404") || error.message.includes("insufficient_quota")) {
+                if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("insufficient_quota")) {
                     console.log(`⚠️ Tier ${tierIndex} limit hit. Falling down to next tier...`);
                     tierIndex++;
                     if (tierIndex >= tiers.length) {
@@ -145,7 +147,7 @@ export async function executeAgentFlow(userInput: string) {
             steps++;
         }
 
-        const finalResponse = finalContent.replace(/SEARCH:|CALC:|ANSWER:/g, "").trim();
+        const finalResponse = finalContent.replace(/SEARCH:|CALC:|ANSWER/g, "").trim();
         await addMessage("user", userInput);
         await addMessage("ai", finalResponse);
         return finalResponse;
@@ -154,4 +156,3 @@ export async function executeAgentFlow(userInput: string) {
         return "⚠️ Architect Brain Glitch: " + (err.message || "Unknown error");
     }
 }
-
