@@ -11,18 +11,24 @@ export const eliteModel = new ChatOpenAI({
     modelName: "anthropic/claude-3.5-sonnet",
 });
 
-// Tier 2: The "Fast" Brain (Groq)
+// Tier 2: The "Fast" Brain (Groq 70B)
 export const groqModel = new ChatOpenAI({
     apiKey: process.env.GROQ_API_KEY as string,
     configuration: { baseURL: "https://api.groq.com/openai/v1" },
     modelName: "llama-3.3-70b-versatile",
 });
 
+// Tier 2.5: The "Ultra-Fast" Brain (Groq 8B - For quick fallback)
+export const groqLiteModel = new ChatOpenAI({
+    apiKey: process.env.GROQ_API_KEY as string,
+    configuration: { baseURL: "https://api.groq.com/openai/v1" },
+    modelName: "llama-3.1-8b-instant",
+});
+
 // Tier 3: The "Resilient" Brain (Gemini)
 export const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
     model: "gemini-1.5-flash",
-    // Use v1 instead of v1beta to see if it fixes 404
     apiVersion: "v1",
 });
 
@@ -41,9 +47,10 @@ let activeModel: any = groqModel;
 
 export const getActiveModel = () => activeModel;
 
-export function setModel(tier: "elite" | "groq" | "gemini" | "free") {
+export function setModel(tier: "elite" | "groq" | "groqlite" | "gemini" | "free") {
     if (tier === "elite") activeModel = eliteModel;
     else if (tier === "groq") activeModel = groqModel;
+    else if (tier === "groqlite") activeModel = groqLiteModel;
     else if (tier === "gemini") activeModel = geminiModel;
     else if (tier === "free") activeModel = freeModel;
     return `Model switched to ${tier} tier.`;
