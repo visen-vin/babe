@@ -6,14 +6,12 @@ import { TavilySearch } from "@langchain/tavily";
 import { Calculator } from "@langchain/community/tools/calculator";
 // import { browserTool } from "./browser";
 import { memoryDB } from "../core/memory-db";
-// import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia"; // Usually needs a backend
-// import { YouTubeSearchTool } from "@langchain/community/tools/youtube_search";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
-// "Why": Ready-made tools humein hours of coding se bachate hain.
-// "What": Community tools for Search, Math, and knowledge.
+const execAsync = promisify(exec);
 
-// "Why": Ready-made tools sometimes use complex syntax that Llama on Groq fails to parse.
-// "What": A simple custom tool that calls Tavily for search.
+// --- SEARCH TOOLS ---
 export const webSearchTool = tool(
     async ({ query }) => {
         try {
@@ -45,10 +43,7 @@ export const webSearchTool = tool(
     }
 );
 
-export const calculatorTool = new Calculator();
-
-// "Why": Bot ko batao ki wo files padh sakta hai.
-// "What": Ek tool jo filename leta hai aur uska content return karta hai.
+// --- FILE TOOLS ---
 export const fileWriterTool = tool(
     async ({ fileName, content }) => {
         try {
@@ -72,7 +67,6 @@ export const fileWriterTool = tool(
 export const fileReaderTool = tool(
     async ({ fileName }) => {
         try {
-            // workspace logic: Hum assume kar rahe hain ki hum 'bot' folder ke andar hain
             const filePath = path.join(process.cwd(), "..", fileName);
             const content = await fs.readFile(filePath, "utf-8");
             return content;
@@ -89,10 +83,10 @@ export const fileReaderTool = tool(
     }
 );
 
+// --- MEMORY TOOLS ---
 export const memorySearchTool = tool(
     async ({ query }) => {
         try {
-            // Always re-index to keep it fresh for now (can be optimized later)
             await memoryDB.indexFiles(path.join(process.cwd(), ".."));
             const results = memoryDB.search(query);
             if (results.length === 0) return "No matches found in local memory.";
@@ -110,15 +104,12 @@ export const memorySearchTool = tool(
     }
 );
 
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(exec);
+// --- SYSTEM TOOLS ---
+export const calculatorTool = new Calculator();
 
 export const gitPushTool = tool(
     async ({ message }) => {
         try {
-            // We assume we are in the 'bot' folder or the root is reachable
             const { stdout, stderr } = await execAsync(`git add .. && git commit -m "${message}" && git push origin master`);
             return `Git Update Successful:\n${stdout}\n${stderr}`;
         } catch (error: any) {
@@ -134,5 +125,23 @@ export const gitPushTool = tool(
     }
 );
 
-// export { browserTool };
-export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, memorySearchTool, gitPushTool];
+export const terminalTool = tool(
+    async ({ command }) => {
+        try {
+            console.log(`[Terminal] Executing: ${command}`);
+            const { stdout, stderr } = await execAsync(command);
+            return `Output:\n${stdout}\n${stderr}`;
+        } catch (error: any) {
+            return `Execution Error: ${error.message}`;
+        }
+    },
+    {
+        name: "runTerminal",
+        description: "Execute a shell command in the system. Use this only when requested by the Boss, like for rebuilding Docker or system checks.",
+        schema: z.object({
+            command: z.string().describe("The shell command to execute"),
+        }),
+    }
+);
+
+export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, memorySearchTool, gitPushTool, terminalTool];

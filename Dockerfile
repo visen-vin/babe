@@ -7,8 +7,11 @@ ENV NODE_ENV=production
 # 3. Create app directory
 WORKDIR /app
 
-# 4. Install Playwright system dependencies (Required for Chromium to run)
+# 4. Install system dependencies & Docker CLI (to manage itself)
 RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    lsb-release \
     libnss3 \
     libatk-bridge2.0-0 \
     libxcomposite1 \
@@ -18,6 +21,10 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libpangocairo-1.0-0 \
     libxshmfence1 \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
 # 5. Copy package files
