@@ -1,4 +1,4 @@
-import { model } from "../core/llm";
+import { model, fallbackModel } from "../core/llm";
 import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
@@ -50,9 +50,22 @@ export async function executeAgentFlow(userInput: string) {
 
         let steps = 0;
         let finalContent = "";
+        let currentModel: any = model;
 
         while (steps < 4) {
-            const result = (await model.invoke(messages)) as AIMessage;
+            let result;
+            try {
+                result = (await currentModel.invoke(messages)) as AIMessage;
+            } catch (error: any) {
+                if (error.message.includes("429") || error.message.includes("rate limit")) {
+                    console.log("⚠️ Groq limit hit. Switching to Gemini fallback...");
+                    currentModel = fallbackModel;
+                    result = (await currentModel.invoke(messages)) as AIMessage;
+                } else {
+                    throw error;
+                }
+            }
+
             const content = result.content as string;
             finalContent = content;
 

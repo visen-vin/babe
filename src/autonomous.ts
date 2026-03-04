@@ -7,8 +7,8 @@ import { executeAgentFlow } from "./core/agent";
 export async function startAutonomousResearch() {
     console.log("🛠️ Starting Autonomous Research Loop...");
 
-    // Run every 4 hours (4 * 60 * 60 * 1000)
-    const INTERVAL = 4 * 60 * 60 * 1000;
+    // Run every 12 hours (12 * 60 * 60 * 1000)
+    const INTERVAL = 12 * 60 * 60 * 1000;
 
     const researchTask = async () => {
         try {
