@@ -1,5 +1,5 @@
-import { getActiveModel, eliteModel, trinityModel, stepfunModel, glmModel, nemotronModel, groqModel, geminiModel, setModel, invokeWithLog } from "../core/llm";
-import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, calculatorTool, gitPushTool } from "../tools/index";
+import { getActiveModel, eliteModel, grokFastModel, trinityModel, stepfunModel, glmModel, nemotronModel, llama33Free, gptOssFree, groqModel, geminiModel, setModel, invokeWithLog } from "../core/llm";
+import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, calculatorTool, gitPushTool, terminalTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
 
@@ -46,6 +46,7 @@ export async function executeAgentFlow(userInput: string) {
         - Write File: WRITE: [filename]\n[content]
         - Math: CALC: [expression]
         - Git Update: GIT_PUSH: [commit message]
+        - Run Terminal: TERMINAL: [shell command]
         - Final Response: ANSWER: [casual conversational response]`;
 
         const messages: BaseMessage[] = [
@@ -56,35 +57,61 @@ export async function executeAgentFlow(userInput: string) {
 
         let steps = 0;
         let finalContent = "";
-        let currentModel: any = getActiveModel();
+        const freeTiers = [trinityModel, llama33Free, stepfunModel, glmModel, nemotronModel, gptOssFree];
+        const paidTiers = [eliteModel, grokFastModel, groqModel, geminiModel];
 
-        // New fallback logic: elite -> trinity -> stepfun -> glm -> nemotron -> groq -> gemini
-        const tiers = [eliteModel, trinityModel, stepfunModel, glmModel, nemotronModel, groqModel, geminiModel];
-        let tierIndex = tiers.findIndex(m => {
+        let currentModel: any = getActiveModel();
+        let currentTierIndex = freeTiers.findIndex(m => {
             const mName = (m as any).modelName || (m as any).model;
             const activeName = (currentModel as any).modelName || (currentModel as any).model;
             return mName === activeName;
         });
-        if (tierIndex === -1) tierIndex = 1; // Default to Trinity if unknown
+        if (currentTierIndex === -1) currentTierIndex = 0; // Default to the first free tier if unknown
+
+        let tierType = 'free';
 
         while (steps < 4) {
             let result;
             try {
                 const modelName = currentModel.modelName || currentModel.model || "unknown";
-                console.log(`[Brain] Calling LLM (Step ${steps + 1}) | Model: ${modelName}...`);
+                console.log(`[Brain] Calling LLM (Step ${steps + 1}) | Model: ${modelName} [${tierType}]...`);
                 result = await invokeWithLog(currentModel, messages, modelName);
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
                 if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("insufficient_quota")) {
-                    console.log(`⚠️ Tier ${tierIndex} limit hit. Falling down to next tier...`);
-                    tierIndex++;
-                    if (tierIndex >= tiers.length) {
+                    console.log(`⚠️ Model limit hit. Falling down to next tier...`);
+                    
+                    let nextModelFound = false;
+                    if (tierType === 'free') {
+                        currentTierIndex++;
+                        if (currentTierIndex < freeTiers.length) {
+                            currentModel = freeTiers[currentTierIndex];
+                            nextModelFound = true;
+                        } else {
+                            // All free tiers exhausted, switch to paid
+                            tierType = 'paid';
+                            currentTierIndex = 0;
+                            currentModel = paidTiers[currentTierIndex];
+                            nextModelFound = true;
+                            console.log(`[Brain] All free tiers exhausted. Switching to paid tiers...`);
+                        }
+                    } else if (tierType === 'paid') {
+                        currentTierIndex++;
+                        if (currentTierIndex < paidTiers.length) {
+                            currentModel = paidTiers[currentTierIndex];
+                            nextModelFound = true;
+                        }
+                    }
+
+                    if (!nextModelFound) {
                         throw new Error("All LLM tiers exhausted. Re-connect or check credits.");
                     }
-                    currentModel = tiers[tierIndex];
+
+                    // Retry with the new model
                     const modelName = currentModel.modelName || currentModel.model || "unknown";
                     result = await invokeWithLog(currentModel, messages, modelName);
                     console.log(`[Brain] Fallback LLM Success.`);
+
                 } else {
                     console.error(`[Brain] LLM Failure: ${error.message}`);
                     throw error;
@@ -134,6 +161,12 @@ export async function executeAgentFlow(userInput: string) {
                 const gitResult = await (gitPushTool as any).invoke({ message });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`Git Result: ${gitResult}`));
+            } else if (content.includes("TERMINAL:")) {
+                const command = content.split("TERMINAL:")[1]?.trim().split("\n")[0];
+                console.log(`[Tool] Terminal: ${command}`);
+                const termResult = await (terminalTool as any).invoke({ command });
+                messages.push(new AIMessage(content));
+                messages.push(new HumanMessage(`Terminal Result: ${termResult}`));
             } else if (content.includes("ANSWER:")) {
                 const finalStr = content.replace("ANSWER:", "").trim();
                 await addMessage("user", userInput);

@@ -19,17 +19,18 @@ const createOpenRouterModel = (modelName: string, title: string) => new ChatOpen
 // --- 💎 TIER 1: Elite Models ---
 export const eliteModel = createOpenRouterModel("anthropic/claude-3.5-sonnet", "Vaspbot Elite");
 
+// --- 🎖️ TIER 1.5: Low-End Premium (Long Context) ---
+export const grokFastModel = createOpenRouterModel("x-ai/grok-4.1-fast", "Vaspbot Groq Fast");
+
 // --- 🆓 FREE PRIMARY MODELS (As requested by Boss) ---
+export const llama33Free = createOpenRouterModel("meta-llama/llama-3.3-70b-instruct:free", "Vaspbot Llama 3.3 Free");
 export const trinityModel = createOpenRouterModel("arcee-ai/trinity-large-preview:free", "Vaspbot Trinity Free");
 export const stepfunModel = createOpenRouterModel("stepfun/step-3.5-flash:free", "Vaspbot StepFun Free");
 export const glmModel = createOpenRouterModel("z-ai/glm-4.5-air:free", "Vaspbot GLM Free");
 export const nemotronModel = createOpenRouterModel("nvidia/nemotron-3-nano-30b-a3b:free", "Vaspbot Nemotron Free");
+export const gptOssFree = createOpenRouterModel("openai/gpt-oss-20b:free", "Vaspbot GPT-OSS Free");
 
-// Existing Free Tiers
-export const llama70bFree = createOpenRouterModel("meta-llama/llama-3.3-70b-instruct:free", "Vaspbot Llama 70B Free");
-export const qwenCoderFree = createOpenRouterModel("qwen/qwen3-coder:free", "Vaspbot Qwen Coder Free");
-
-// --- 🚀 TIER 2: Fast Paid (Groq) ---
+// --- 🚀 TIER 2: Fast Paid (Groq/OpenRouter) ---
 export const groqModel = new ChatOpenAI({
     apiKey: process.env.GROQ_API_KEY as string,
     configuration: { baseURL: "https://api.groq.com/openai/v1" },
@@ -45,19 +46,20 @@ export const geminiModel = new ChatGoogleGenerativeAI({
 // Model Registry
 const models: Record<string, any> = {
     elite: eliteModel,
+    grok_fast: grokFastModel,
     trinity: trinityModel,
     stepfun: stepfunModel,
     glm: glmModel,
     nemotron: nemotronModel,
-    llama70b_free: llama70bFree,
-    qwen_free: qwenCoderFree,
+    llama33_free: llama33Free,
+    gpt_oss_free: gptOssFree,
     groq: groqModel,
     gemini: geminiModel,
 };
 
-let activeTier = "trinity"; // Starting with the Boss's preferred free model
+let activeTier = "trinity";
 
-export const getActiveModel = () => models[activeTier] || trinityModel;
+export const getActiveModel = () => models[activeTier] || llama33Free;
 
 export function setModel(tier: string) {
     if (models[tier]) {
