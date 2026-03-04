@@ -1,5 +1,5 @@
-import { getActiveModel, eliteModel, groqModel, groqLiteModel, geminiModel, freeModel, setModel } from "../core/llm";
-import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
+import { getActiveModel, eliteModel, groqModel, groqLiteModel, geminiModel, freeModel, setModel, invokeWithLog } from "../core/llm";
+import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
 
@@ -43,7 +43,6 @@ export async function executeAgentFlow(userInput: string) {
 
         TOOLS:
         - Web Search: SEARCH: [query]
-        - Browse URL: BROWSE: [url]
         - Local Memory Search: SEARCH_MEMORY: [query]
         - Read File: READ: [path]
         - Write File: WRITE: [filename]\n[content]
@@ -69,8 +68,9 @@ export async function executeAgentFlow(userInput: string) {
         while (steps < 4) {
             let result;
             try {
-                console.log(`[Brain] Calling LLM (Step ${steps + 1})...`);
-                result = (await currentModel.invoke(messages)) as AIMessage;
+                const modelName = currentModel.modelName || currentModel.model || "unknown";
+                console.log(`[Brain] Calling LLM (Step ${steps + 1}) | Model: ${modelName}...`);
+                result = await invokeWithLog(currentModel, messages, modelName);
                 console.log(`[Brain] LLM Success.`);
             } catch (error: any) {
                 if (error.message.includes("429") || error.message.includes("rate limit") || error.message.includes("404") || error.message.includes("insufficient_quota")) {
@@ -80,7 +80,8 @@ export async function executeAgentFlow(userInput: string) {
                         throw new Error("All LLM tiers exhausted. Re-connect or check credits.");
                     }
                     currentModel = tiers[tierIndex];
-                    result = (await currentModel.invoke(messages)) as AIMessage;
+                    const modelName = currentModel.modelName || currentModel.model || "unknown";
+                    result = await invokeWithLog(currentModel, messages, modelName);
                     console.log(`[Brain] Fallback LLM Success.`);
                 } else {
                     console.error(`[Brain] LLM Failure: ${error.message}`);
@@ -97,12 +98,6 @@ export async function executeAgentFlow(userInput: string) {
                 const searchResult = await (webSearchTool as any).invoke({ query });
                 messages.push(new AIMessage(content));
                 messages.push(new HumanMessage(`Search Results: ${searchResult}`));
-            } else if (content.includes("BROWSE:")) {
-                const url = content.split("BROWSE:")[1]?.trim().split("\n")[0];
-                console.log(`[Tool] Browsing: ${url}`);
-                const browseResult = await (browserTool as any).invoke({ url });
-                messages.push(new AIMessage(content));
-                messages.push(new HumanMessage(`Browser Results: ${browseResult}`));
             } else if (content.includes("SEARCH_MEMORY:")) {
                 const query = content.split("SEARCH_MEMORY:")[1]?.trim().split("\n")[0];
                 console.log(`[Tool] Searching memory: ${query}`);
@@ -150,7 +145,7 @@ export async function executeAgentFlow(userInput: string) {
             steps++;
         }
 
-        const finalResponse = finalContent.replace(/SEARCH:|BROWSE:|CALC:|ANSWER:/g, "").trim();
+        const finalResponse = finalContent.replace(/SEARCH:|CALC:|ANSWER:/g, "").trim();
         await addMessage("user", userInput);
         await addMessage("ai", finalResponse);
         return finalResponse;

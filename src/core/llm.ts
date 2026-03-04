@@ -1,5 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { logUsage } from "./usage";
+import { AIMessage } from "@langchain/core/messages";
 
 // Tier 1: The "Elite" Brain (OpenRouter)
 export const eliteModel = new ChatOpenAI({
@@ -54,4 +56,24 @@ export function setModel(tier: "elite" | "groq" | "groqlite" | "gemini" | "free"
     else if (tier === "gemini") activeModel = geminiModel;
     else if (tier === "free") activeModel = freeModel;
     return `Model switched to ${tier} tier.`;
+}
+
+/**
+ * Utility to invoke a model and log its usage
+ */
+export async function invokeWithLog(model: any, messages: any, modelName: string): Promise<AIMessage> {
+    const result = (await model.invoke(messages)) as AIMessage;
+    
+    // Extract metadata
+    const usage = (result as any).usage_metadata || (result as any).additional_kwargs?.tokenUsage;
+    
+    if (usage) {
+        const inputTokens = usage.input_tokens || usage.prompt_tokens || 0;
+        const outputTokens = usage.output_tokens || usage.completion_tokens || 0;
+        logUsage(modelName, inputTokens, outputTokens);
+    } else {
+        console.log(`[Usage] No token metadata found for ${modelName}`);
+    }
+    
+    return result;
 }

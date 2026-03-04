@@ -4,7 +4,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { TavilySearch } from "@langchain/tavily";
 import { Calculator } from "@langchain/community/tools/calculator";
-import { browserTool } from "./browser";
+// import { browserTool } from "./browser";
 import { memoryDB } from "../core/memory-db";
 // import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia"; // Usually needs a backend
 // import { YouTubeSearchTool } from "@langchain/community/tools/youtube_search";
@@ -134,5 +134,5 @@ export const gitPushTool = tool(
     }
 );
 
-export { browserTool };
-export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool, memorySearchTool, gitPushTool];
+// export { browserTool };
+export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, memorySearchTool, gitPushTool];

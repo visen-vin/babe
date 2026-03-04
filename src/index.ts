@@ -9,6 +9,9 @@ import { Hono } from "hono";
 
 import { executeAgentFlow } from "./core/agent";
 import { startAutonomousResearch } from "./autonomous";
+import { startMemoryReflection } from "./reflection";
+import { getStats, getServerMetrics } from "./core/usage";
+import { checkSystemHealth } from "./core/alerts";
 
 const app = new Hono();
 
@@ -19,6 +22,13 @@ app.post("/chat", async (c) => {
     console.log(`\n[API] Request: ${userInput}`);
     const response = await executeAgentFlow(userInput);
     return c.json({ response });
+});
+
+app.get("/metrics", async (c) => {
+    return c.json({
+        usage: getStats(),
+        server: getServerMetrics()
+    });
 });
 
 app.get("/", async (c) => {
@@ -40,7 +50,7 @@ app.get("/", async (c) => {
 
 // --- 🤖 Telegram Bot ---
 const botToken = process.env.TELEGRAM_BOT_TOKEN as string;
-const bot = new Telegraf(botToken);
+export const bot = new Telegraf(botToken);
 
 async function start() {
     console.log("--- ⚡ Vaspbot Starting... ---");
@@ -48,11 +58,22 @@ async function start() {
     // Start background research loop
     startAutonomousResearch();
 
+    // Start autonomous memory reflection
+    startMemoryReflection();
+
+    // Start proactive health check every 5 minutes
+    setInterval(() => checkSystemHealth(bot), 5 * 60 * 1000);
+
     // Telegram Handler
     bot.on(message("text"), async (ctx) => {
         try {
             const userInput = ctx.message.text;
-            console.log(`\n[Telegram] User: ${userInput}`);
+            console.log(`\n[Telegram] User ID ${ctx.from.id}: ${userInput}`);
+
+            // To set owner ID automatically if not present in .env
+            if (!process.env.TELEGRAM_OWNER_ID) {
+                console.log(`💡 [Setup] Your Telegram Chat ID is: ${ctx.from.id}. Please add TELEGRAM_OWNER_ID=${ctx.from.id} to your .env file.`);
+            }
 
             // Simple typing notification
             await ctx.sendChatAction("typing");

@@ -3,3 +3,5 @@ node_modules
 bun.lockb
 .DS_Store
 dist
+vasp_memory.sqlite
+usage_stats.json
