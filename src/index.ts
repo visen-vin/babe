@@ -44,9 +44,6 @@ const bot = new Telegraf(botToken);
 
 async function start() {
     console.log("--- ⚡ Vaspbot Starting... ---");
-    console.log(`[LangSmith] Tracing: ${process.env.LANGCHAIN_TRACING_V2}`);
-    console.log(`[LangSmith] Project: ${process.env.LANGCHAIN_PROJECT}`);
-    console.log(`[LangSmith] Key Present: ${!!process.env.LANGCHAIN_API_KEY}`);
 
     // Start background research loop
     startAutonomousResearch();
