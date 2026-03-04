@@ -51,6 +51,14 @@ export class SqliteChatMessageHistory extends BaseChatMessageHistory {
         );
     }
 
+    async addUserMessage(message: string): Promise<void> {
+        await this.addMessage(new HumanMessage(message));
+    }
+
+    async addAIMessage(message: string): Promise<void> {
+        await this.addMessage(new AIMessage(message));
+    }
+
     async clear(): Promise<void> {
         this.db.run("DELETE FROM messages WHERE session_id = ?", [this.sessionId]);
     }
