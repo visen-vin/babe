@@ -1,4 +1,4 @@
-import { model, eliteModel, groqModel, geminiModel, freeModel, setModel } from "../core/llm";
+import { getActiveModel, eliteModel, groqModel, geminiModel, freeModel, setModel } from "../core/llm";
 import { webSearchTool, fileReaderTool, fileWriterTool, memorySearchTool, browserTool, calculatorTool, gitPushTool } from "../tools/index";
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from "@langchain/core/messages";
 import { getHistory, addMessage } from "../memory/history";
@@ -59,11 +59,11 @@ export async function executeAgentFlow(userInput: string) {
 
         let steps = 0;
         let finalContent = "";
-        let currentModel: any = model;
+        let currentModel: any = getActiveModel();
 
         // Tiered Fallback Logic: elite -> groq -> gemini -> free
         const tiers = [eliteModel, groqModel, geminiModel, freeModel];
-        let tierIndex = tiers.indexOf(currentModel);
+        let tierIndex = tiers.findIndex(m => m === currentModel);
         if (tierIndex === -1) tierIndex = 1; // Default to groq if unknown
 
         while (steps < 4) {

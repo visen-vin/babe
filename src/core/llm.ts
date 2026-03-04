@@ -21,7 +21,7 @@ export const groqModel = new ChatOpenAI({
 // Tier 3: The "Resilient" Brain (Gemini)
 export const geminiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY as string,
-    model: "gemini-pro",
+    model: "gemini-1.5-flash",
 });
 
 // Tier 4: The "Safe/Free" Brain (OpenRouter Free Models)
@@ -33,13 +33,15 @@ export const freeModel = new ChatOpenAI({
     modelName: "meta-llama/llama-3-8b-instruct:free",
 });
 
-// Default Model Reference (Can be swapped dynamically)
-export let model: any = groqModel;
+// Implementation of dynamic switching
+let activeModel: any = groqModel;
+
+export const getActiveModel = () => activeModel;
 
 export function setModel(tier: "elite" | "groq" | "gemini" | "free") {
-    if (tier === "elite") model = eliteModel;
-    else if (tier === "groq") model = groqModel;
-    else if (tier === "gemini") model = geminiModel;
-    else if (tier === "free") model = freeModel;
+    if (tier === "elite") activeModel = eliteModel;
+    else if (tier === "groq") activeModel = groqModel;
+    else if (tier === "gemini") activeModel = geminiModel;
+    else if (tier === "free") activeModel = freeModel;
     return `Model switched to ${tier} tier.`;
 }
