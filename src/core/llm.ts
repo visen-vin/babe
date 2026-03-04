@@ -57,7 +57,7 @@ const models: Record<string, any> = {
     gemini: geminiModel,
 };
 
-let activeTier = "trinity";
+let activeTier = "grok";
 
 export const getActiveModel = () => models[activeTier] || llama33Free;
 
