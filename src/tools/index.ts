@@ -110,4 +110,5 @@ export const memorySearchTool = tool(
     }
 );
 
+export { browserTool };
 export const tools = [fileReaderTool, fileWriterTool, webSearchTool, calculatorTool, browserTool, memorySearchTool];

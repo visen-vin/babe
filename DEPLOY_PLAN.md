@@ -11,7 +11,7 @@ This plan outlines the steps to move from local terminal chat to a cloud-hosted 
 - [ ] **Volumes:** Ensure `SOUL.md` and `MEMORY.md` are mounted as volumes so memory persists across container restarts.
 
 ## 3. Infrastructure (AWS)
-- [ ] **SSH to Instance:** Already connected to `52.63.73.227`.
+- [ ] **SSH to Instance:** Already connected to `3.25.74.243`.
 - [ ] **Install Docker:** Verify/Install Docker and Docker Compose on the server.
 - [ ] **Transfer Code:** Use `git` or `scp` to move the `/bot` folder to AWS.
 
